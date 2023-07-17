@@ -1,8 +1,10 @@
 package edu.ufrn.tads.apirestpharmakon.domain;
 
 
+
 import edu.ufrn.tads.apirestpharmakon.controller.PessoaController;
 import jakarta.persistence.*;
+import jakarta.persistence.OneToOne;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
@@ -14,15 +16,25 @@ import org.hibernate.annotations.Where;
 import org.modelmapper.ModelMapper;
 import org.springframework.hateoas.RepresentationModel;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+
+
 @EqualsAndHashCode(callSuper = true)
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
 @Entity
-@SQLDelete(sql = "UPDATE pessoa SET deleted_at = CURRENT_TIMESTAMP WHERE id=?")
+@SQLDelete(sql = "UPDATE pessoas SET deleted_at = CURRENT_TIMESTAMP WHERE id=?")
 @Where(clause = "deleted_at is null")
-@Table(name = "pessoa")
+@Table(name = "pessoas")
 public class Pessoa extends AbstractEntity{
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id_pessoa")
+    Long id;
     String nome;
     Integer idade;
     String password;
@@ -31,6 +43,10 @@ public class Pessoa extends AbstractEntity{
     @OneToOne(cascade = CascadeType.PERSIST, fetch = FetchType.EAGER, orphanRemoval = true)
     @JoinColumn(name = "endereco_id")
     Endereco endereco;
+
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true, mappedBy = "pessoa")
+    private List<Pedido> pedidos = new ArrayList<>();
+
 
 
 
@@ -57,6 +73,14 @@ public class Pessoa extends AbstractEntity{
 
             return mapper.map(p, DtoResponse.class);
         }
+
+        public void generateLinks(Long id){
+            add(linkTo(PessoaController.class).slash(id).withSelfRel());
+            add(linkTo(PessoaController.class).withRel("pessoas"));
+            add(linkTo(PessoaController.class).slash(id).withRel("delete"));
+        }
+
+
     }
 
 }
